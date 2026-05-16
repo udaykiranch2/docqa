@@ -1,0 +1,22 @@
+# Core RAG dependencies
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-huggingface>=0.2.0
+langchain-text-splitters>=0.3.0
+
+# Embeddings & Vector Store
+sentence-transformers>=3.0.0
+langchain-chroma>=0.2.0
+
+# Document Loaders
+pypdf>=4.0.0
+python-docx>=1.1.0
+unstructured>=0.15.0
+
+# Hugging Face
+huggingface-hub>=0.25.0
+transformers>=4.45.0
+
+# Utilities
+python-dotenv>=1.0.0
+rich>=13.0.0
