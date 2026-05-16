@@ -41,12 +41,12 @@ CHROMA_PERSIST_DIR=./chroma_db
 CHROMA_COLLECTION_NAME=documents
 
 # Chunking
-CHUNK_SIZE=500
-CHUNK_OVERLAP=50
+CHUNK_SIZE=800
+CHUNK_OVERLAP=100
 
 # Retrieval
-TOP_K_RESULTS=5
-MIN_SIMILARITY_SCORE=0.3
+TOP_K_RESULTS=10
+MIN_SIMILARITY_SCORE=0.2
 
 # Default documents folder (used when no path is specified)
 DOCUMENTS_DIR=./documents
@@ -63,11 +63,16 @@ This will install:
 | Package | Purpose |
 |---------|---------|
 | `langchain` | RAG orchestration |
+| `langchain-classic` | Ensemble retriever and contextual compression |
+| `langchain-community` | Community loaders (BM25 retriever, FlashRank) |
+| `langchain-huggingface` | Hugging Face integrations |
 | `sentence-transformers` | Local embeddings (downloads model on first run, ~90MB) |
 | `chromadb` | Local vector database |
-| `pypdf` | PDF document loader |
+| `pymupdf` | PDF document loader |
 | `python-docx` | Word document loader |
 | `huggingface-hub` | Hugging Face API access |
+| `flashrank` | Reranking of retrieved results |
+| `rank_bm25` | BM25 keyword retrieval (hybrid search) |
 | `rich` | Terminal formatting |
 
 ## Step 4: Run the Application
@@ -86,7 +91,7 @@ Path:
 ```
 
 - **Paste a file path** to ingest a single file (e.g., `C:\docs\report.pdf`)
-- **Paste a directory path** to ingest all supported files in that folder
+- **Paste a directory path** to ingest all supported files in that folder (subdirectories are included)
 - **Press Enter** to use the existing index (if available) or the default `./documents` folder
 
 ### Ingest-only mode (non-interactive)
@@ -102,6 +107,14 @@ Ingest from the default `./documents` folder:
 
 ```bash
 python main.py --ingest
+```
+
+### Clear the index
+
+Delete all indexed documents from ChromaDB:
+
+```bash
+python main.py --clear
 ```
 
 ### Supported file formats

@@ -5,8 +5,10 @@ A local Retrieval-Augmented Generation (RAG) system that lets you ask questions 
 ## Features
 
 - **Ask questions over your own documents** -- PDFs, text files, CSVs, Word docs, and Python source files
-- **Flexible path input** -- ingest a single file, an entire directory, or use the default `./documents` folder
+- **Flexible path input** -- ingest a single file, an entire directory (including subdirectories), or use the default `./documents` folder
 - **Interactive Q&A** -- conversational interface with source attribution
+- **Hybrid retrieval** -- combines vector similarity search with BM25 keyword matching for better results
+- **Reranking** -- FlashRank reranks retrieved chunks so the most relevant context reaches the LLM
 - **Fully local embeddings** -- runs `sentence-transformers` on CPU, no GPU required
 - **Persistent vector store** -- ChromaDB saves indexed data so you only ingest once
 - **Configurable** -- chunk size, retrieval count, similarity threshold, and model selection via `.env`
@@ -29,7 +31,7 @@ A local Retrieval-Augmented Generation (RAG) system that lets you ask questions 
 │   └─ _load_directory │   │  ask_question() -- query + sources    │
 │ chunk_documents()    │   │                                       │
 │                      │   │  Uses: LangChain, HuggingFaceEndpoint │
-│ Loaders: PyPDF, TXT, │   └───────────────┬───────────────────────┘
+│ Loaders: PyMuPDF,    │   └───────────────┬───────────────────────┘
 │   CSV, Docx, Python  │                   │
 └──────────┬───────────┘                   │
            │                               │
@@ -39,8 +41,10 @@ A local Retrieval-Augmented Generation (RAG) system that lets you ask questions 
 │                                                                  │
 │  get_embedding_model()  -- HuggingFaceEmbeddings (CPU)           │
 │  get_vector_store()     -- ChromaDB instance (persistent)        │
-│  index_documents()      -- add chunks to vector store            │
+│  index_documents()      -- add chunks to vector store + BM25     │
+│  clear_collection()     -- wipe ChromaDB index + BM25            │
 │  retrieve_documents()   -- similarity search with score filter   │
+│  rebuild_bm25_from_store() -- rebuild BM25 from existing data    │
 └──────────┬───────────────────────────────────────────────────────┘
            │
            ▼
@@ -58,10 +62,11 @@ A local Retrieval-Augmented Generation (RAG) system that lets you ask questions 
    File/Dir path ──► load_from_path() ──► LangChain Loaders
         ──► Raw Documents ──► RecursiveCharacterTextSplitter
         ──► Chunks ──► HuggingFaceEmbeddings (encode)
-        ──► ChromaDB (store vectors + metadata)
+        ──► ChromaDB (store vectors + metadata) + BM25 index
 
 2. Query
-   User question ──► ChromaDB similarity search ──► Top-K chunks
+   User question ──► EnsembleRetriever (vector + BM25)
+        ──► FlashRank reranking ──► Top-N chunks
         ──► Prompt (system context + question)
         ──► HuggingFace Inference API (LLM)
         ──► Answer + source attribution
@@ -112,10 +117,10 @@ All settings can be overridden in `.env`:
 | `HF_LLM_MODEL` | `Qwen/Qwen2.5-7B-Instruct` | LLM for answer generation |
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | ChromaDB storage location |
 | `CHROMA_COLLECTION_NAME` | `documents` | ChromaDB collection name |
-| `CHUNK_SIZE` | `500` | Characters per chunk |
-| `CHUNK_OVERLAP` | `50` | Overlap characters between chunks |
-| `TOP_K_RESULTS` | `5` | Number of chunks retrieved per query |
-| `MIN_SIMILARITY_SCORE` | `0.3` | Minimum relevance score (0-1) |
+| `CHUNK_SIZE` | `800` | Characters per chunk |
+| `CHUNK_OVERLAP` | `100` | Overlap characters between chunks |
+| `TOP_K_RESULTS` | `10` | Number of chunks retrieved per query |
+| `MIN_SIMILARITY_SCORE` | `0.2` | Minimum relevance score (0-1) |
 | `DOCUMENTS_DIR` | `./documents` | Default document folder |
 
 ## Usage Examples
@@ -154,8 +159,10 @@ python main.py --ingest
 | RAG orchestration | LangChain |
 | Embeddings | sentence-transformers (local, CPU) |
 | Vector store | ChromaDB (local, persistent) |
+| Keyword retrieval | BM25 (via rank_bm25) |
+| Reranking | FlashRank |
 | LLM | Hugging Face Inference API |
-| Document loaders | PyPDF, python-docx, langchain-community |
+| Document loaders | PyMuPDF, python-docx, langchain-community |
 | CLI | Rich (terminal formatting) |
 | Language | Python 3.10+ |
 

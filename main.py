@@ -1,19 +1,26 @@
 """Document Q&A using RAG with Hugging Face models."""
 
 import sys
+from typing import Optional
+
 from rich.console import Console
-from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.panel import Panel
 
 import config
-from document_processor import load_documents, load_from_path, chunk_documents
-from embedding_store import get_embedding_model, get_vector_store, index_documents
-from rag_pipeline import build_qa_chain, ask_question
+from document_processor import chunk_documents, load_documents, load_from_path
+from embedding_store import (
+    clear_collection,
+    get_embedding_model,
+    get_vector_store,
+    index_documents,
+)
+from rag_pipeline import ask_question, build_qa_chain
 
 console = Console()
 
 
-def ingest_documents(path: str = None):
+def ingest_documents(path: Optional[str] = None):
     """Load, chunk, and index documents from a path or the default directory."""
     console.print("\n[bold blue]--- Document Ingestion ---[/bold blue]")
     try:
@@ -27,9 +34,9 @@ def ingest_documents(path: str = None):
 
     if not documents:
         console.print(
-            f"[yellow]No documents found.[/yellow]\n"
-            f"Provide a path to a file or directory with supported files "
-            f"(PDF, TXT, CSV, DOCX, PY)."
+            "[yellow]No documents found.[/yellow]\n"
+            "Provide a path to a file or directory with supported files "
+            "(PDF, TXT, CSV, DOCX, PY)."
         )
         return False
 
@@ -97,9 +104,7 @@ def interactive_qa():
                     page = doc.metadata.get("page", "")
                     label = f"{src}" + (f" (page {page})" if page != "" else "")
                     sources.add(label)
-                console.print(
-                    f"[dim]Sources: {', '.join(sorted(sources))}[/dim]"
-                )
+                console.print(f"[dim]Sources: {', '.join(sorted(sources))}[/dim]")
         except Exception as e:
             console.print(f"[red]Error: {e}[/red]")
 
@@ -107,8 +112,7 @@ def interactive_qa():
 def main():
     console.print(
         Panel(
-            "[bold]RAG Document Q&A System[/bold]\n"
-            "Powered by Hugging Face + ChromaDB",
+            "[bold]RAG Document Q&A System[/bold]\nPowered by Hugging Face + ChromaDB",
             border_style="blue",
         )
     )
@@ -118,18 +122,33 @@ def main():
         ingest_documents(ingest_path)
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "--clear":
+        console.print("[yellow]Clearing ChromaDB index...[/yellow]")
+        clear_collection()
+        console.print("[green]Index cleared.[/green]")
+        return
+
     import os
-    has_index = os.path.exists(config.CHROMA_PERSIST_DIR) and os.listdir(config.CHROMA_PERSIST_DIR)
+
+    has_index = os.path.exists(config.CHROMA_PERSIST_DIR) and os.listdir(
+        config.CHROMA_PERSIST_DIR
+    )
 
     if not has_index:
         console.print("[yellow]No indexed documents found.[/yellow]")
 
     console.print(
         "\nEnter a file or directory path to ingest, or press Enter to "
-        + ("use existing index" if has_index else f"use default '{config.DOCUMENTS_DIR}'")
+        + (
+            "use existing index"
+            if has_index
+            else f"use default '{config.DOCUMENTS_DIR}'"
+        )
         + "."
     )
-    path_input = console.input("[bold cyan]Path:[/bold cyan] ").strip().strip('"').strip("'")
+    path_input = (
+        console.input("[bold cyan]Path:[/bold cyan] ").strip().strip('"').strip("'")
+    )
 
     if path_input:
         if not ingest_documents(path_input):

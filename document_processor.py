@@ -4,7 +4,7 @@ import os
 from typing import List
 
 from langchain_community.document_loaders import (
-    PyPDFLoader,
+    PyMuPDFLoader,
     TextLoader,
     CSVLoader,
     Docx2txtLoader,
@@ -21,7 +21,7 @@ def get_loader(file_path: str):
     """Return the appropriate loader based on file extension."""
     ext = os.path.splitext(file_path)[1].lower()
     loaders = {
-        ".pdf": PyPDFLoader,
+        ".pdf": PyMuPDFLoader,
         ".txt": TextLoader,
         ".csv": CSVLoader,
         ".docx": Docx2txtLoader,
@@ -63,22 +63,34 @@ def _load_file(file_path: str) -> List:
     docs = loader.load()
     for doc in docs:
         doc.metadata["source_file"] = filename
-    print(f"Loaded: {filename} ({len(docs)} sections)")
-    return docs
+
+    # Filter out documents with empty content (e.g. image-only / vector-glyph PDFs).
+    non_empty = [doc for doc in docs if doc.page_content.strip()]
+    if len(non_empty) < len(docs):
+        skipped = len(docs) - len(non_empty)
+        print(
+            f"Warning: {skipped} section(s) in {filename} had no extractable text. "
+            f"The file may be image-based or use non-standard text rendering. "
+            f"Try re-exporting the PDF with a different tool, or use OCR."
+        )
+
+    print(f"Loaded: {filename} ({len(non_empty)}/{len(docs)} sections with text)")
+    return non_empty
 
 
 def _load_directory(directory: str) -> List:
-    """Load all supported documents from a directory."""
+    """Recursively load all supported documents from a directory."""
     documents = []
-    for filename in sorted(os.listdir(directory)):
-        ext = os.path.splitext(filename)[1].lower()
-        if ext not in SUPPORTED_EXT:
-            continue
-        file_path = os.path.join(directory, filename)
-        try:
-            documents.extend(_load_file(file_path))
-        except Exception as e:
-            print(f"Error loading {filename}: {e}")
+    for root, _dirs, files in os.walk(directory):
+        for filename in sorted(files):
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in SUPPORTED_EXT:
+                continue
+            file_path = os.path.join(root, filename)
+            try:
+                documents.extend(_load_file(file_path))
+            except Exception as e:
+                print(f"Error loading {filename}: {e}")
     return documents
 
 
