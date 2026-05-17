@@ -100,6 +100,27 @@ def get_bm25_retriever() -> Optional[BM25Retriever]:
     return _bm25_retriever
 
 
+def get_collection_stats(vector_store: Optional[Chroma] = None) -> dict:
+    """Return stats about the current collection (chunk count, source files)."""
+    if vector_store is None:
+        vector_store = get_vector_store()
+
+    existing = vector_store.get(include=["metadatas"])
+    ids = existing["ids"] if existing else []
+    metadatas = existing["metadatas"] if existing else []
+
+    source_files = set()
+    for meta in metadatas:
+        src = meta.get("source_file")
+        if src:
+            source_files.add(src)
+
+    return {
+        "chunk_count": len(ids),
+        "source_files": sorted(source_files),
+    }
+
+
 def retrieve_documents(query: str, vector_store: Chroma, top_k: Optional[int] = None) -> List:
     """Retrieve relevant document chunks for a query."""
     if top_k is None:
