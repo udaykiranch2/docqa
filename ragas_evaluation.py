@@ -234,7 +234,14 @@ def run_health_check(
     # Local models are slow — give each row plenty of time.
     # ContextPrecision iterates over all retrieved contexts sequentially
     # inside a single per-row timeout (5 contexts × ~40s = 200s+).
-    run_config = RunConfig(timeout=900, max_retries=3, max_wait=45)
+    # Limit concurrency for Ollama so jobs don't queue up and time out.
+    max_workers = 1 if config.RAGAS_EVAL_LLM_MODE == "ollama" else None
+    run_config = RunConfig(
+        timeout=900,
+        max_retries=3,
+        max_wait=45,
+        max_workers=max_workers,
+    )
 
     raw_result = evaluate(
         dataset=evaluation_dataset,
