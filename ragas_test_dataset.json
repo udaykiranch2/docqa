@@ -1,0 +1,34 @@
+[
+  {
+    "user_input": "What key breakthrough in 2017 transformed the development of large language models?",
+    "reference": "In 2017, the Google Brain team introduced the transformer architecture, a deep learning model that replaced traditional recurrent and convolutional structures. This architecture is particularly effective at understanding and contextualizing language, as well as generating text, images, audio, and computer code. LLMs based on the transformer architecture have led to progressively larger models with hundreds of billions of parameters."
+  },
+  {
+    "user_input": "What are the three basic types of data sources organizations should use for generative AI?",
+    "reference": "The three basic types of data sources are: first-party data, which is internal data produced via everyday business interactions with customers and prospects; second-party data, which is produced by or in collaboration with trusted partners such as product inventory data shared with e-commerce or retail partners; and third-party data from a service provider or data marketplace."
+  },
+  {
+    "user_input": "What is the difference between a foundation model and a domain-specific LLM?",
+    "reference": "A foundation model is a class of generative AI models trained on broad data that serves as the basis for developing specialized applications adapted to specific industries and business problems. Domain-specific LLMs apply generative AI technology to specific subjects and industries, such as NVIDIA's BioBERT which is trained on biomedical text to help researchers understand scientific literature."
+  },
+  {
+    "user_input": "Why are GPUs important for AI and machine learning?",
+    "reference": "GPUs (graphics processing units) are accelerated hardware systems designed to handle multiple threads of information simultaneously, leading to faster training of AI models. Unlike CPUs, GPUs excel at parallel processing of large datasets including text, images, audio, and video. They perform computationally intensive calculations like matrix operations much faster than CPUs, accelerating both training and inference times."
+  },
+  {
+    "user_input": "What are some enterprise use cases for LLMs mentioned in the book?",
+    "reference": "Enterprise use cases for LLMs include: content generation such as blogs, press releases, and product descriptions; chatbots for conversational interactions with business users; logical reasoning engines that understand natural language; translation engines that convert text between languages; and search and summarization tools that locate relevant information and generate concise summaries."
+  },
+  {
+    "user_input": "What role does a cloud data platform play in managing generative AI projects?",
+    "reference": "A cloud data platform provides a central location where data scientists, data engineers, and business workgroups can access data easily and securely. It allows centralization of data governance and democratization of access to generative AI initiatives. It extends AI horizons by storing first-party data and leveraging data from second- and third-party providers, while eliminating the need to deal with infrastructure complexities."
+  },
+  {
+    "user_input": "What is the challenge of balancing security and ease of use with LLMs in the enterprise?",
+    "reference": "The challenge is that LLMs become more powerful when trained with enterprise data, but much of this data is protected in private databases behind network firewalls. Enterprises need to leverage generative AI in an easy, straightforward manner while upholding essential data security, governance, and regulatory requirements for both the data and the models that learn from and extract information from it."
+  },
+  {
+    "user_input": "What are GPT-3 and BERT, and how do they differ?",
+    "reference": "GPT-3 is a general-purpose LLM developed by OpenAI based on the Generative Pre-trained Transformer series, renowned for language generation capabilities across various tasks including search, text generation, and reasoning. BERT (Bidirectional Encoder Representations from Transformers), developed by Google, employs a different approach to understanding and processing language."
+  }
+]

@@ -1,110 +1,77 @@
 # RAG Document Q&A System
 
-A local Retrieval-Augmented Generation (RAG) system that lets you ask questions about your documents using open-source LLMs via the Hugging Face Inference API, with ChromaDB as the vector store.
+A local Retrieval-Augmented Generation (RAG) system that lets you ask questions about your documents using open-source LLMs. Runs Qwen 3 (8B) locally via Ollama by default (no API costs), with ChromaDB as the vector store.
+
+Includes a CLI, a FastAPI backend, and a Streamlit frontend.
 
 ## Features
 
 - **Ask questions over your own documents** -- PDFs, text files, CSVs, Word docs, and Python source files
-- **Flexible path input** -- ingest a single file, an entire directory (including subdirectories), or use the default `./documents` folder
-- **Interactive Q&A** -- conversational interface with source attribution
-- **Hybrid retrieval** -- combines vector similarity search with BM25 keyword matching for better results
+- **Local LLM by default** -- uses Ollama with Qwen 3 8B (no cloud API or token required)
+- **Hybrid retrieval** -- combines vector similarity search with BM25 keyword matching
 - **Reranking** -- FlashRank reranks retrieved chunks so the most relevant context reaches the LLM
 - **Fully local embeddings** -- runs `sentence-transformers` on CPU, no GPU required
 - **Persistent vector store** -- ChromaDB saves indexed data so you only ingest once
+- **Multiple interfaces** -- interactive CLI, REST API (FastAPI), and web UI (Streamlit)
+- **RAG evaluation** -- built-in RAGAS health checks to measure pipeline quality
 - **Configurable** -- chunk size, retrieval count, similarity threshold, and model selection via `.env`
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                         main.py (CLI)                            │
-│  Entry point -- parses args, prompts for path, runs ingestion    │
-│  or launches interactive Q&A                                     │
-└──────────┬────────────────────────────┬──────────────────────────┘
-           │                            │
-           ▼                            ▼
-┌──────────────────────┐   ┌───────────────────────────────────────┐
-│ document_processor.py│   │         rag_pipeline.py               │
-│                      │   │                                       │
-│ load_from_path()     │   │  get_llm()      -- HF endpoint setup  │
-│   └─ _load_file()    │   │  build_qa_chain()-- LCEL RAG chain    │
-│   └─ _load_directory │   │  ask_question() -- query + sources    │
-│ chunk_documents()    │   │                                       │
-│                      │   │  Uses: LangChain, HuggingFaceEndpoint │
-│ Loaders: PyMuPDF,    │   └───────────────┬───────────────────────┘
-│   CSV, Docx, Python  │                   │
-└──────────┬───────────┘                   │
-           │                               │
-           ▼                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                      embedding_store.py                          │
-│                                                                  │
-│  get_embedding_model()  -- HuggingFaceEmbeddings (CPU)           │
-│  get_vector_store()     -- ChromaDB instance (persistent)        │
-│  index_documents()      -- add chunks to vector store + BM25     │
-│  clear_collection()     -- wipe ChromaDB index + BM25            │
-│  retrieve_documents()   -- similarity search with score filter   │
-│  rebuild_bm25_from_store() -- rebuild BM25 from existing data    │
-└──────────┬───────────────────────────────────────────────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│      config.py       │
-│  All settings from   │
-│  .env / defaults     │
-└──────────────────────┘
-```
-
-### Data Flow
-
-```
-1. Ingestion
-   File/Dir path ──► load_from_path() ──► LangChain Loaders
-        ──► Raw Documents ──► RecursiveCharacterTextSplitter
-        ──► Chunks ──► HuggingFaceEmbeddings (encode)
-        ──► ChromaDB (store vectors + metadata) + BM25 index
-
-2. Query
-   User question ──► EnsembleRetriever (vector + BM25)
-        ──► FlashRank reranking ──► Top-N chunks
-        ──► Prompt (system context + question)
-        ──► HuggingFace Inference API (LLM)
-        ──► Answer + source attribution
-```
-
-## Project Structure
-
-```
-summarize_docs/
-├── main.py                 # CLI entry point -- interactive & ingest modes
-├── config.py               # Configuration loaded from .env
-├── document_processor.py   # Document loading, path resolution, chunking
-├── embedding_store.py      # Embedding model + ChromaDB vector store
-├── rag_pipeline.py         # LLM setup, RAG chain, Q&A logic
-├── requirements.txt        # Python dependencies
-├── .env.example            # Template for environment variables
-├── .env                    # Your secrets (not committed)
-├── SETUP.md                # Step-by-step setup instructions
-├── documents/              # Default folder for documents (auto-created)
-└── chroma_db/              # Persistent ChromaDB data (auto-created)
-```
 
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# 1. Install Ollama and pull a model
+ollama pull qwen3:8b
 
-# 2. Set your Hugging Face token
-cp .env.example .env
-# Edit .env and add: HF_TOKEN=hf_xxxxx
+# 2. Install dependencies
+pip install -r requirements.txt
 
 # 3. Run
 python main.py
-# Paste a file/dir path at the prompt, or press Enter for ./documents
 ```
 
-See [SETUP.md](SETUP.md) for the full setup guide.
+See [SETUP.md](SETUP.md) for the full setup guide, including HuggingFace API mode and optional configuration.
+
+## Usage
+
+### CLI (interactive)
+
+```bash
+# Interactive Q&A (prompts for document path)
+python main.py
+
+# Ingest a specific file or directory
+python main.py --ingest path/to/documents
+
+# Clear the vector store index
+python main.py --clear
+
+# Run RAGAS quality evaluation
+python main.py --ragas
+```
+
+### API server
+
+```bash
+python run_api.py
+# Starts FastAPI at http://localhost:8000
+```
+
+### Web UI
+
+```bash
+python run_ui.py
+# Starts Streamlit frontend
+```
+
+### Supported file formats
+
+| Format | Extension |
+|--------|-----------|
+| PDF | `.pdf` |
+| Plain text | `.txt` |
+| CSV | `.csv` |
+| Word | `.docx` |
+| Python source | `.py` |
 
 ## Configuration
 
@@ -112,59 +79,52 @@ All settings can be overridden in `.env`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HF_TOKEN` | *(required)* | Hugging Face API token |
+| `RAG_LLM_MODE` | `ollama` | `ollama` for local, `huggingface` for HF Inference API |
+| `HF_LLM_MODEL` | `qwen3:8b` | Model name (Ollama model or HF model ID) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server address |
+| `HF_TOKEN` | *(empty)* | Hugging Face API token (only needed for HF mode) |
 | `HF_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Local embedding model |
-| `HF_LLM_MODEL` | `Qwen/Qwen2.5-7B-Instruct` | LLM for answer generation |
-| `CHROMA_PERSIST_DIR` | `./chroma_db` | ChromaDB storage location |
-| `CHROMA_COLLECTION_NAME` | `documents` | ChromaDB collection name |
-| `CHUNK_SIZE` | `800` | Characters per chunk |
-| `CHUNK_OVERLAP` | `100` | Overlap characters between chunks |
+| `CHUNK_SIZE` | `1200` | Characters per chunk |
+| `CHUNK_OVERLAP` | `200` | Overlap characters between chunks |
 | `TOP_K_RESULTS` | `10` | Number of chunks retrieved per query |
 | `MIN_SIMILARITY_SCORE` | `0.2` | Minimum relevance score (0-1) |
 | `DOCUMENTS_DIR` | `./documents` | Default document folder |
-
-## Usage Examples
-
-### Ingest a single file and ask questions
-
-```bash
-python main.py --ingest C:\docs\annual-report.pdf
-# Then run Q&A:
-python main.py
-```
-
-### Ingest an entire directory
-
-```bash
-python main.py --ingest "C:\My Documents\project-files"
-```
-
-### Interactive path prompt
-
-```bash
-python main.py
-# At the Path: prompt, paste any file or directory
-```
-
-### Re-ingest after adding new files
-
-```bash
-python main.py --ingest
-```
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
 | RAG orchestration | LangChain |
+| LLM | Ollama (Qwen 3 8B) / Hugging Face Inference API |
 | Embeddings | sentence-transformers (local, CPU) |
 | Vector store | ChromaDB (local, persistent) |
 | Keyword retrieval | BM25 (via rank_bm25) |
 | Reranking | FlashRank |
-| LLM | Hugging Face Inference API |
-| Document loaders | PyMuPDF, python-docx, langchain-community |
+| REST API | FastAPI |
+| Web UI | Streamlit |
+| Evaluation | RAGAS |
 | CLI | Rich (terminal formatting) |
-| Language | Python 3.10+ |
+
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for system diagrams and data flow.
+
+## Contributing
+
+Contributions are welcome. To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Test your changes -- run `python main.py --ragas` to verify pipeline quality
+5. Submit a pull request with a clear description of the change
+
+### Guidelines
+
+- Keep changes focused -- one feature or fix per PR
+- Follow the existing code style
+- Update `.env.example` and `SETUP.md` if you add new configuration options
+- Do not commit `.env`, `chroma_db/`, or `__pycache__/` directories
 
 ## License
 

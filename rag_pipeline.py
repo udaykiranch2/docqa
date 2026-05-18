@@ -1,4 +1,4 @@
-"""RAG pipeline: retrieve context and generate answers using Hugging Face."""
+"""RAG pipeline: retrieve context and generate answers."""
 
 from flashrank import Ranker
 from langchain_classic.retrievers import (
@@ -9,7 +9,6 @@ from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 
 import config
 from embedding_store import (
@@ -18,15 +17,35 @@ from embedding_store import (
     rebuild_bm25_from_store,
 )
 
-RAG_SYSTEM_TEMPLATE = """Use the following context to answer the user's question.
-If you don't know the answer based on the context, say "I don't have enough information to answer that."
+RAG_SYSTEM_TEMPLATE = """Answer the user's question using ONLY the information provided in the context below. Do not add any information that is not directly supported by the context.
+
+If the context does not contain enough information to answer the question, say "I don't have enough information to answer that."
+
+Guidelines:
+- Base your entire answer on the provided context — do not use prior knowledge.
+- Be specific and include relevant details from the context.
+- Provide a complete answer based on the available context. Do not add disclaimers, caveats, or notes about completeness.
+- Do not infer or extrapolate beyond what the context explicitly states.
 
 Context:
 {context}"""
 
 
-def get_llm() -> ChatHuggingFace:
-    """Initialize the Hugging Face chat model."""
+def get_llm():
+    """Initialize the chat model — Ollama (default) or HuggingFace API."""
+    if config.RAG_LLM_MODE == "ollama":
+        from langchain_ollama import ChatOllama
+
+        return ChatOllama(
+            model=config.HF_LLM_MODEL,
+            base_url=config.OLLAMA_BASE_URL,
+            temperature=0.1,
+            num_predict=2048,
+        )
+
+    # HuggingFace API mode
+    from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+
     if not config.HF_TOKEN:
         raise ValueError(
             "HF_TOKEN not set. Add it to your .env file. See SETUP.md for instructions."
@@ -78,7 +97,7 @@ def build_qa_chain(llm=None, vector_store=None):
         base_retriever = vector_retriever
         print("No BM25 retriever available; falling back to vector-only retrieval")
 
-    rerank_top_n = min(5, config.TOP_K_RESULTS)
+    rerank_top_n = min(8, config.TOP_K_RESULTS)
     compressor = FlashrankRerank(top_n=rerank_top_n, client=Ranker())
     retriever = ContextualCompressionRetriever(
         base_compressor=compressor,

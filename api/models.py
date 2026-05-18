@@ -45,3 +45,23 @@ class HealthResponse(BaseModel):
 class StatsResponse(BaseModel):
     chunk_count: int
     source_files: List[str]
+
+
+class RagasMetricScores(BaseModel):
+    faithfulness: Optional[float] = None
+    response_relevancy: Optional[float] = None
+    context_recall: Optional[float] = None
+    context_precision: Optional[float] = None
+
+
+class RagasQuestionDetail(BaseModel):
+    question: str
+    answer: str
+    num_contexts: int
+
+
+class RagasHealthResponse(BaseModel):
+    status: str
+    metrics: RagasMetricScores
+    details: List[RagasQuestionDetail]
+    message: str

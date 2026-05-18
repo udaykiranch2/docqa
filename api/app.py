@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import api.state as state_module
-from api.routes import health, documents, qa
+from api.routes import health, documents, qa, ragas_health
 
 
 @asynccontextmanager
@@ -36,3 +36,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(documents.router)
 app.include_router(qa.router)
+app.include_router(ragas_health.router)
