@@ -36,7 +36,7 @@ DOCUMENTS_DIR = os.getenv("DOCUMENTS_DIR", "./documents")
 # "local" = run a model locally via transformers (requires GPU / slow on CPU)
 RAGAS_EVAL_LLM_MODE = os.getenv("RAGAS_EVAL_LLM_MODE", "ollama")
 RAGAS_EVAL_LLM_MODEL = os.getenv(
-    "RAGAS_EVAL_LLM_MODEL", "qwen3:8b"
+    "RAGAS_EVAL_LLM_MODEL", "llama3"
 )
 RAGAS_EVAL_LLM_PROVIDER = os.getenv(
     "RAGAS_EVAL_LLM_PROVIDER", "together-ai"

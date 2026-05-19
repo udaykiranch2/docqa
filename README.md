@@ -105,6 +105,19 @@ All settings can be overridden in `.env`:
 | Evaluation | RAGAS |
 | CLI | Rich (terminal formatting) |
 
+## RAGAS Evaluation Results
+
+Pipeline evaluated with RAGAS metrics using Llama 3 (evaluator) and Qwen 3 8B (RAG LLM) locally. All metrics pass.
+
+| Metric | Score | Threshold | Pass |
+|--------|------:|----------:|------|
+| Faithfulness | 0.8654 | 0.85 | PASS |
+| Response Relevancy | 0.8869 | 0.80 | PASS |
+| Context Recall | 0.9167 | 0.75 | PASS |
+| Context Precision | 0.8587 | 0.80 | PASS |
+
+**Overall Status: HEALTHY**
+
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for system diagrams and data flow.
